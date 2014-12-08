@@ -20,4 +20,19 @@ type Operation interface {
 
 	// get a set of keys that match a glob
 	GetKeyGlob(key_glob string) []string
+
+	// insert list of documents
+	InsertDocument(docs []bson.M) bool
+
+	// set k/v pairs in unique document
+	SetKVDocumentUnique(kv bson.M, uuid string) bool
+
+	// set k/v pairs in set of documents using where clause
+	SetKVDocumentWhere(kv, where bson.M) bool
+
+	// delete list of keys in unique document
+	DeleteKeyDocumentUnique(keys []string, uuid string) bool
+
+	// delete list of keys in set of documents using where clause
+	DeleteKeyDocumentWhere(keys []string, where bson.M) bool
 }
