@@ -3,7 +3,7 @@ package gobad
 // a document is a list of key/value pairs
 type KVList [][2]string
 
-type Operation interface {
+type MetadataQuery interface {
 	// Get Operations
 
 	// get a single document by using a unique identifier
