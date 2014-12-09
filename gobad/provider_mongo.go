@@ -195,13 +195,11 @@ func (p *ProviderMongo) GetKeyGlob(key_glob string) []string {
 
 // insert list of documents
 func (p *ProviderMongo) InsertDocument(docs []KVList) {
-	bson_docs := []bson.M{}
 	for _, doc := range docs {
-		bson_docs = append(bson_docs, KVList2Bson(doc))
-	}
-	err := p.db_mq.C("records").Insert(bson_docs)
-	if err != nil {
-		Report.Fatal("Error inserting documents: %v", err)
+        err := p.db_mq.C("records").Insert(doc)
+        if err != nil {
+            Report.Fatal("Error inserting documents: %v : %v", err, doc)
+        }
 	}
 }
 
