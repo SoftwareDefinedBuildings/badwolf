@@ -281,12 +281,11 @@ func (p *ProviderMongo) DeleteKeyGlobDocumentUnique(key_glob, uuid string) {
 }
 
 // delete keys that match glob in set of documents using where clause
-func (p *ProviderMongo) DeleteKeyGlobDocumentWhere(key_glob string, where KVList) error {
+func (p *ProviderMongo) DeleteKeyGlobDocumentWhere(key_glob string, where KVList) {
 	q := p.db_mq.C("records").Find(KVList2Bson(where))
 	it := q.Iter()
 	doc := bson.M{}
 	for it.Next(&doc) {
 		p.DeleteKeyGlobDocumentUnique(key_glob, doc["uuid"].(string))
 	}
-	return nil
 }

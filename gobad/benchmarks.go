@@ -18,6 +18,7 @@ func benchmarks_entry() {
 		provider.Initialize()
 		//Benchmarks
 		BENCH_BWQ_A(provider, "mongo")
+		BENCH_MetadataQuery_B(provider, "mongo")
 	}
 
 	Report.WriteOut()
