@@ -114,7 +114,11 @@ func (p *ProviderMongo) GetAllocSetID(vk VK) int64 {
 func Bson2KVList(doc bson.M) KVList {
 	ret := KVList{}
 	for k, v := range doc {
-		ret = append(ret, [2]string{k, v.(string)})
+		if val, ok := v.(string); ok {
+			ret = append(ret, [2]string{k, val})
+		} else {
+			ret = append(ret, [2]string{k, string(v.(bson.ObjectId))})
+		}
 	}
 	return ret
 }
@@ -196,10 +200,10 @@ func (p *ProviderMongo) GetKeyGlob(key_glob string) []string {
 // insert list of documents
 func (p *ProviderMongo) InsertDocument(docs []KVList) {
 	for _, doc := range docs {
-        err := p.db_mq.C("records").Insert(doc)
-        if err != nil {
-            Report.Fatal("Error inserting documents: %v : %v", err, doc)
-        }
+		err := p.db_mq.C("records").Insert(KVList2Bson(doc))
+		if err != nil {
+			Report.Fatal("Error inserting documents: %v : %v", err, doc)
+		}
 	}
 }
 

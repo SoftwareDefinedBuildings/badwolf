@@ -59,15 +59,15 @@ func BENCH_BWQ_A(p BosswaveQuery, pfx string) {
 	}
 }
 
-func BENCH_MetadataQuery_B(mq MetadataQuery, prefix string) {
+func BENCH_MetadataQuery(mq MetadataQuery, prefix string) {
 	// generate documents
 	sg := NewStringGenerator("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_")
 	toplevelkeys := sg.GenerateNRandomStrings(10, 10) // 10 random strings with length 10
 	for run := 0; run < FACTOR/10; run++ {
+		// InsertDocument
 		recs := make([]KVList, FACTOR)
 		for i := 0; i < FACTOR; i++ {
-			id := uuid.New()
-			record := [][2]string{[2]string{"uuid", id}}
+			record := [][2]string{[2]string{"uuid", uuid.New()}}
 			for _, tlk := range toplevelkeys {
 				record = append(record, [2]string{tlk, sg.RandomString(5)})
 			}
@@ -78,6 +78,13 @@ func BENCH_MetadataQuery_B(mq MetadataQuery, prefix string) {
 		for _, rec := range recs {
 			mq.InsertDocument([]KVList{rec})
 		}
-		Report.DeltaMetric(prefix+".B", run, st)
+		Report.DeltaMetric(prefix+".InsertDocument", run, st)
+
+		// GetDocumentUnique
+		st = Report.StartTimer()
+		for _, rec := range recs {
+			mq.GetDocumentUnique(rec[0][1]) // fetch uuid
+		}
+		Report.DeltaMetric(prefix+".GetDocumentUnique", run, st)
 	}
 }
