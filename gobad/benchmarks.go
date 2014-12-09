@@ -18,7 +18,7 @@ func benchmarks_entry() {
 	//TODO some reflection BS here, instead of hard coding
 	//foreach database type
 	for run := 0; run < FACTOR/10; run++ {
-		if run % 10 == 0 {
+		if run%10 == 0 {
 			fmt.Printf("Doing Run %d\n", run)
 		}
 		provider := new(ProviderMongo)
@@ -117,4 +117,11 @@ func BENCH_MetadataQuery(mq MetadataQuery, prefix string, run int) {
 	}
 	Report.DeltaMetric(prefix+".GetDocumentSetValueGlob", run, st)
 
+	// GetKeyGlob
+	st = Report.StartTimer()
+	for _, rec := range recs {
+		i := rand.Intn(10)
+		mq.GetKeyGlob(string(rec[i][0][0]) + ".*")
+	}
+	Report.DeltaMetric(prefix+".GetKeyGlob", run, st)
 }
