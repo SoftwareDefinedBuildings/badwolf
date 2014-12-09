@@ -2,7 +2,7 @@ package gobad
 
 type BosswaveRecord struct {
 	Key      string
-	AllocSet int64
+	Allocset int64
 	Owner    int64
 	Size     int64
 	Value    []byte
@@ -17,6 +17,9 @@ type AllocationSet struct {
 
 type BosswaveQuery interface {
 
+	//Do any initial config
+	Initialize() 
+	
 	//Get a specific value
 	GetRecord(key string) BosswaveRecord
 

@@ -4,6 +4,10 @@ package gobad
 type KVList [][2]string
 
 type MetadataQuery interface {
+	
+	//Do any initial config
+	Initialize() 
+	
 	// Get Operations
 
 	// get a single document by using a unique identifier
