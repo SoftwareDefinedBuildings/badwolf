@@ -18,14 +18,14 @@ type AllocationSet struct {
 type BosswaveQuery interface {
 
 	//Do any initial config
-	Initialize() 
-	
+	Initialize()
+
 	//Get a specific value
 	GetRecord(key string) BosswaveRecord
 
 	//Insert a record
 	InsertRecord(r BosswaveRecord)
-	
+
 	//Get a list of keys up to a slash
 	//so GetKeysUpToSlash(/foo/bar/) would return /foo/bar/baz
 	//but not /foo/bar/baz/box

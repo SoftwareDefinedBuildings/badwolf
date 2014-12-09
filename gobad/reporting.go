@@ -1,22 +1,22 @@
 package gobad
 
 import (
-	"log"
-	"fmt"
-	"os"
 	"encoding/json"
+	"fmt"
+	"log"
+	"os"
 	"time"
-	)
+)
 
 type BPoint struct {
-	Id			string	`json:"id"`
-	Iteration	int		`json:"iteration"`
-	Value		float64	`json:"value"`
+	Id        string  `json:"id"`
+	Iteration int     `json:"iteration"`
+	Value     float64 `json:"value"`
 }
 type Reporter struct {
-	VAL_Ok 		 bool		`json:"ok"`
-	VAL_FatalMsg string		`json:"fatalmsg"`
-	VAL_Metrics	 []BPoint	`json:"metrics"`
+	VAL_Ok       bool     `json:"ok"`
+	VAL_FatalMsg string   `json:"fatalmsg"`
+	VAL_Metrics  []BPoint `json:"metrics"`
 }
 
 type Measurement time.Time
@@ -38,7 +38,7 @@ func (r *Reporter) Fatal(format string, args ...interface{}) {
 }
 
 func (r *Reporter) Metric(id string, iteration int, value float64) {
-	r.VAL_Metrics = append(r.VAL_Metrics, BPoint{Id:id, Iteration:iteration, Value:value})
+	r.VAL_Metrics = append(r.VAL_Metrics, BPoint{Id: id, Iteration: iteration, Value: value})
 }
 
 func (r *Reporter) DeltaMetric(id string, iteration int, start time.Time) {

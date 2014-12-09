@@ -5,10 +5,11 @@ import (
 	"gopkg.in/mgo.v2/bson"
 	"regexp"
 )
+
 type ProviderMongo struct {
-	ses     *mgo.Session
-	db_bw   *mgo.Database
-	db_mq   *mgo.Database
+	ses   *mgo.Session
+	db_bw *mgo.Database
+	db_mq *mgo.Database
 }
 
 //== SHARED
@@ -20,17 +21,20 @@ func (p *ProviderMongo) Initialize(params map[string]interface{}) {
 	p.ses = ses
 	p.db_bw = ses.DB("bosswavequery")
 	p.db_mq = ses.DB("metadataquery")
-	
+
 	//BosswaveQuery initialization
-	p.db_bw.C("records").EnsureIndex(mgo.Index{Key:[]string{"key"}, Unique:true})
-	p.db_bw.C("records").EnsureIndex(mgo.Index{Key:[]string{"allocset"}, Unique:true})
+	p.db_bw.C("records").EnsureIndex(mgo.Index{Key: []string{"key"}, Unique: true})
+	p.db_bw.C("records").EnsureIndex(mgo.Index{Key: []string{"allocset"}, Unique: true})
+
+	//MetadataQuery initialization
+	p.db_mq.C("records").EnsureIndex(mgo.Index{Key: []string{"uuid"}, Unique: true})
 }
 
 //== BosswaveQuery
 
 //Get a specific value
 func (p *ProviderMongo) GetRecord(key string) BosswaveRecord {
-	q := p.db_bw.C("records").Find(bson.M{"key":key})
+	q := p.db_bw.C("records").Find(bson.M{"key": key})
 	rv := BosswaveRecord{}
 	qerr := q.One(&rv)
 	if qerr != nil {
@@ -51,12 +55,12 @@ func (p *ProviderMongo) InsertRecord(r BosswaveRecord) {
 //so GetKeysUpToSlash(/foo/bar/) would return /foo/bar/baz
 //but not /foo/bar/baz/box
 func (p *ProviderMongo) GetKeysUpToSlash(keyprefix string) []string {
-	
-	regex := "^"+regexp.QuoteMeta(keyprefix)+"[^/]*"
+
+	regex := "^" + regexp.QuoteMeta(keyprefix) + "[^/]*"
 	rv := make([]string, 1024)
-	q := p.db_bw.C("records").Find(bson.M{"key":bson.M{"$regex":bson.RegEx{Pattern:regex}}})
+	q := p.db_bw.C("records").Find(bson.M{"key": bson.M{"$regex": bson.RegEx{Pattern: regex}}})
 	it := q.Iter()
-	val := struct {Key string}{}
+	val := struct{ Key string }{}
 	for it.Next(&val) {
 		rv = append(rv, val.Key)
 	}
@@ -70,7 +74,7 @@ func (p *ProviderMongo) SumSize(AllocSet int64) int64 {
 
 //Create an allocation set
 func (p *ProviderMongo) CreateAllocSet(r AllocationSet) {
-	
+
 }
 
 //Get the allocation set ID
@@ -78,34 +82,82 @@ func (p *ProviderMongo) GetAllocSetID(vk VK) int64 {
 	return 0
 }
 
-
-
 //== MetadataQuery
 // Get Operations
 
+// converts k/v pairs in bson.M to a list of key/value pairs
+func Bson2KVList(doc bson.M) KVList {
+	ret := KVList{}
+	for k, v := range doc {
+		ret = append(ret, [2]string{k, v.(string)})
+	}
+	return ret
+}
+
+// converts list of key/value pairs into a bson.M document
+func KVList2Bson(list KVList) bson.M {
+	ret := bson.M{}
+	for _, kv := range list {
+		ret[kv[0]] = kv[1]
+	}
+	return ret
+}
+
 // get a single document by using a unique identifier
 func (p *ProviderMongo) GetDocumentUnique(uuid string) (KVList, error) {
-	return nil, nil
+	var res bson.M
+	err := p.db_mq.C("records").FindId(uuid).One(&res)
+	return Bson2KVList(res), err
 }
 
 // get a set of documents using a where clause
 func (p *ProviderMongo) GetDocumentSetWhere(where KVList) ([]KVList, error) {
-	return nil, nil
+	q := p.db_mq.C("records").Find(KVList2Bson(where))
+	it := q.Iter()
+	ret := []KVList{}
+	doc := bson.M{}
+	for it.Next(&doc) {
+		ret = append(ret, Bson2KVList(doc))
+	}
+	return ret, nil
 }
 
 // get list of unique values for a given key
 func (p *ProviderMongo) GetUniqueValues(key string) ([]interface{}, error) {
-	return nil, nil
+	var res []interface{}
+	err := p.db_mq.C("records").Find(bson.M{}).Distinct(key, &res)
+	return res, err
 }
 
 // get a set of documents with a key/value matching a glob (anchored regex)
 func (p *ProviderMongo) GetDocumentSetValueGlob(key, value_glob string) ([]KVList, error) {
-	return nil, nil
+	q := p.db_mq.C("records").Find(bson.M{key: bson.M{"$regex": value_glob}})
+	it := q.Iter()
+	ret := []KVList{}
+	doc := bson.M{}
+	for it.Next(&doc) {
+		ret = append(ret, Bson2KVList(doc))
+	}
+	return ret, nil
 }
 
 // get a set of keys that match a glob
+// MongoDB doesn't provide this functionality, so we actually fetch all keys
+// for all documents and check them individually
 func (p *ProviderMongo) GetKeyGlob(key_glob string) ([]string, error) {
-	return nil, nil
+	re := regexp.MustCompile(key_glob)
+	q := p.db_mq.C("records").Find(bson.M{})
+	it := q.Iter()
+	ret := []string{}
+	doc := bson.M{}
+	for it.Next(&doc) {
+		for key, _ := range doc {
+			if re.MatchString(key) {
+				ret = append(ret, key)
+			}
+		}
+	}
+	return ret, nil
 }
 
 // Set Operations
@@ -151,5 +203,3 @@ func (p *ProviderMongo) DeleteKeyGlobDocumentUnique(key_glob, uuid string) error
 func (p *ProviderMongo) DeleteKeyGlobDocumentWhere(key_glob string, where KVList) error {
 	return nil
 }
-
-
