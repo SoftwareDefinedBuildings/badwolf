@@ -1,4 +1,4 @@
-package gobad
+package main
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func entry() {
+func benchmarks_entry() {
 	sd := time.Now().Unix()
 	rand.Seed(sd)
 	
@@ -43,7 +43,7 @@ func BENCH_BWQ_A(p BosswaveQuery, pfx string) {
 		recs := make([]BosswaveRecord, FACTOR)
 		for i := 0; i < FACTOR; i++ {
 			recs[i] = BosswaveRecord{
-					Key:fmt.Sprintf("/foo/bar/%d/%d/%d",i%100, i%10,i),
+					Key:fmt.Sprintf("/foo/bar/%d/%d/%d/%d",run,i%100, i%10,i),
 					Allocset: int64(i%100), 
 					Owner: rand.Int63(),
 					Value: []byte{},

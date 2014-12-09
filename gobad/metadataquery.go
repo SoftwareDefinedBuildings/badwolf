@@ -1,4 +1,4 @@
-package gobad
+package main
 
 // a document is a list of key/value pairs
 type KVList [][2]string

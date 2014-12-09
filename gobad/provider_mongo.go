@@ -1,4 +1,4 @@
-package gobad
+package main
 
 import (
 	"gopkg.in/mgo.v2"
@@ -31,7 +31,7 @@ func (p *ProviderMongo) Initialize() {
 
 	//BosswaveQuery initialization
 	p.db_bw.C("records").EnsureIndex(mgo.Index{Key: []string{"key"}, Unique: true})
-	p.db_bw.C("records").EnsureIndex(mgo.Index{Key: []string{"allocset"}, Unique: true})
+	p.db_bw.C("records").EnsureIndex(mgo.Index{Key: []string{"allocset"}, Unique: false})
 
 	//MetadataQuery initialization
 	p.db_mq.C("records").EnsureIndex(mgo.Index{Key: []string{"uuid"}, Unique: true})

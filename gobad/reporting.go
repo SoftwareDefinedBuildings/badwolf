@@ -1,4 +1,4 @@
-package gobad
+package main
 
 import (
 	"encoding/json"

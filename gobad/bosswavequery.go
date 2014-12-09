@@ -1,4 +1,4 @@
-package gobad
+package main
 
 type BosswaveRecord struct {
 	Key      string
