@@ -124,4 +124,68 @@ func BENCH_MetadataQuery(mq MetadataQuery, prefix string, run int) {
 		mq.GetKeyGlob(string(rec[i][0][0]) + ".*")
 	}
 	Report.DeltaMetric(prefix+".GetKeyGlob", run, st)
+
+	// SetKVDocumentUnique
+	st = Report.StartTimer()
+	for _, rec := range recs {
+		randomkv := KVList{[2]string{sg.RandomString(10), sg.RandomString(10)}}
+		mq.SetKVDocumentUnique(randomkv, rec[0][1])
+	}
+	Report.DeltaMetric(prefix+".SetKVDocumentUnique", run, st)
+
+	// SetKVDocumentWhere
+	st = Report.StartTimer()
+	for _, rec := range recs {
+		randomkv := KVList{[2]string{sg.RandomString(10), sg.RandomString(10)}}
+		mq.SetKVDocumentWhere(randomkv, KVList{[2]string{toplevelkeys[rand.Intn(10)], rec[rand.Intn(10)][1]}})
+	}
+	Report.DeltaMetric(prefix+".SetKVDocumentWhere", run, st)
+
+	// SetKVDocumentValueGlob
+	st = Report.StartTimer()
+	for _, rec := range recs {
+		i := rand.Intn(10)
+		randomkv := KVList{[2]string{sg.RandomString(10), sg.RandomString(10)}}
+		mq.SetKVDocumentValueGlob(randomkv, rec[i][0], string(rec[i][1][0])+".*")
+	}
+	Report.DeltaMetric(prefix+".SetKVDocumentValueGlob", run, st)
+
+	// DeleteKeyDocumentUnique
+	st = Report.StartTimer()
+	for _, rec := range recs {
+		mq.DeleteKeyDocumentUnique(toplevelkeys[:2], rec[0][1])
+	}
+	Report.DeltaMetric(prefix+".DeleteKeyDocumentUnique", run, st)
+
+	// adjust toplevel keys
+	toplevelkeys = toplevelkeys[2:]
+
+	// DeleteKeyDocumentWhere
+	st = Report.StartTimer()
+	for _, rec := range recs {
+		where := KVList{[2]string{toplevelkeys[rand.Intn(8)], rec[rand.Intn(8)][1]}}
+		mq.DeleteKeyDocumentWhere(toplevelkeys[:2], where)
+	}
+	Report.DeltaMetric(prefix+".DeleteKeyDocumentWhere", run, st)
+
+	// adjust toplevel keys
+	toplevelkeys = toplevelkeys[2:]
+
+	// DeleteKeyGlobDocumentUnique
+	st = Report.StartTimer()
+	for _, rec := range recs {
+		mq.DeleteKeyGlobDocumentUnique(string(toplevelkeys[0][0])+".*", rec[0][1])
+	}
+	Report.DeltaMetric(prefix+".DeleteKeyGlobDocumentUnique", run, st)
+
+	// adjust again
+	toplevelkeys = toplevelkeys[1:]
+
+	// DeleteKeyGlobDocumentWhere
+	st = Report.StartTimer()
+	for _, rec := range recs {
+		where := KVList{[2]string{toplevelkeys[rand.Intn(5)], rec[rand.Intn(5)][1]}}
+		mq.DeleteKeyGlobDocumentWhere(string(toplevelkeys[0][0])+".*", where)
+	}
+	Report.DeltaMetric(prefix+".DeleteKeyGlobDocumentWhere", run, st)
 }

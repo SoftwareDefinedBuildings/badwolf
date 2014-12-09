@@ -209,7 +209,7 @@ func (p *ProviderMongo) InsertDocument(docs []KVList) {
 
 // set k/v pairs in unique document
 func (p *ProviderMongo) SetKVDocumentUnique(kv KVList, uuid string) {
-	err := p.db_mq.C("records").Update(bson.M{"uuid": uuid}, KVList2Bson(kv))
+	err := p.db_mq.C("records").Update(bson.M{"uuid": uuid}, bson.M{"$set": KVList2Bson(kv)})
 	if err != nil {
 		Report.Fatal("Error setting k/v pairs: %v", err)
 	}
@@ -218,7 +218,7 @@ func (p *ProviderMongo) SetKVDocumentUnique(kv KVList, uuid string) {
 // set k/v pairs in set of documents using where clause
 func (p *ProviderMongo) SetKVDocumentWhere(kv, where KVList) {
 	// discarding mgo.CollectionInfo
-	_, err := p.db_mq.C("records").UpdateAll(KVList2Bson(where), KVList2Bson(kv))
+	_, err := p.db_mq.C("records").UpdateAll(KVList2Bson(where), bson.M{"$set": KVList2Bson(kv)})
 	if err != nil {
 		Report.Fatal("Error setting k/v pairs: %v", err)
 	}
@@ -227,7 +227,7 @@ func (p *ProviderMongo) SetKVDocumentWhere(kv, where KVList) {
 // set k/v pairs for set of documents with k/v matching glob
 func (p *ProviderMongo) SetKVDocumentValueGlob(kv KVList, key, value_glob string) {
 	// discarding mgo.CollectionInfo
-	_, err := p.db_mq.C("records").UpdateAll(bson.M{key: bson.M{"$regex": value_glob}}, KVList2Bson(kv))
+	_, err := p.db_mq.C("records").UpdateAll(bson.M{key: bson.M{"$regex": value_glob}}, bson.M{"$set": KVList2Bson(kv)})
 	if err != nil {
 		Report.Fatal("Error setting k/v pairs: %v", err)
 	}
@@ -270,6 +270,8 @@ func (p *ProviderMongo) DeleteKeyGlobDocumentUnique(key_glob, uuid string) {
 	if err != nil {
 		Report.Fatal("Error finding doc with uuid %v", err)
 	}
+	delete(doc, "_id")
+	delete(doc, "uuid")
 	for k, _ := range doc {
 		if re.MatchString(k) {
 			removekeys[k] = ""
