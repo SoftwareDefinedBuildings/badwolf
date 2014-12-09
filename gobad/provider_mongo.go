@@ -201,7 +201,7 @@ func (p *ProviderMongo) InsertDocument(docs []KVList) {
 	}
 	err := p.db_mq.C("records").Insert(bson_docs)
 	if err != nil {
-		Report.Fatal("Error inserting documents: %v")
+		Report.Fatal("Error inserting documents: %v", err)
 	}
 }
 
