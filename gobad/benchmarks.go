@@ -76,7 +76,6 @@ func BENCH_MetadataQuery_B(mq MetadataQuery, prefix string) {
 
 		st := Report.StartTimer()
 		for _, rec := range recs {
-			fmt.Println(rec)
 			mq.InsertDocument([]KVList{rec})
 		}
 		Report.DeltaMetric(prefix+".B", run, st)
