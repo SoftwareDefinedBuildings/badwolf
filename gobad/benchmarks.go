@@ -9,7 +9,7 @@ import (
 func benchmarks_entry() {
 	sd := time.Now().Unix()
 	rand.Seed(sd)
-	
+
 	//TODO some reflection BS here, instead of hard coding
 	//foreach database type
 	{
@@ -18,10 +18,10 @@ func benchmarks_entry() {
 		//Benchmarks
 		BENCH_BWQ_A(provider, "mongo")
 	}
-	
+
 	Report.WriteOut()
-	
-	
+
+
 }
 
 //If all benchmark constants are relative to this, accuracy can be
@@ -37,19 +37,19 @@ func BWUtil_GenVk() []byte {
 }
 //BosswaveQuery
 func BENCH_BWQ_A(p BosswaveQuery, pfx string) {
-	
-	
+
+
 	for run := 0; run < FACTOR/10 ; run ++ {
 		recs := make([]BosswaveRecord, FACTOR)
 		for i := 0; i < FACTOR; i++ {
 			recs[i] = BosswaveRecord{
 					Key:fmt.Sprintf("/foo/bar/%d/%d/%d/%d",run,i%100, i%10,i),
-					Allocset: int64(i%100), 
+					Allocset: int64(i%100),
 					Owner: rand.Int63(),
 					Value: []byte{},
 					}
 		}
-		
+
 		st := Report.StartTimer()
 		for _, d := range recs {
 			p.InsertRecord(d)
