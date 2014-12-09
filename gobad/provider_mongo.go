@@ -4,6 +4,7 @@ import (
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 	"regexp"
+	"os"
 )
 
 type ProviderMongo struct {
@@ -17,14 +18,16 @@ type ProviderMongo struct {
 }
 
 //== SHARED
-func (p *ProviderMongo) Initialize(params map[string]interface{}) {
-	ses, err := mgo.Dial(params["mongodb"].(string))
+func (p *ProviderMongo) Initialize() {
+	ses, err := mgo.Dial(os.Getenv("MONGODB_SERVER"))
 	if err != nil {
 		Report.Fatal("could not connect to mongo: %v", err)
 	}
 	p.ses = ses
 	p.db_bw = ses.DB("bosswavequery")
 	p.db_mq = ses.DB("metadataquery")
+	p.db_bw.DropDatabase()
+	p.db_mq.DropDatabase()
 
 	//BosswaveQuery initialization
 	p.db_bw.C("records").EnsureIndex(mgo.Index{Key: []string{"key"}, Unique: true})
@@ -61,7 +64,7 @@ func (p *ProviderMongo) InsertRecord(r BosswaveRecord) {
 func (p *ProviderMongo) GetKeysUpToSlash(keyprefix string) []string {
 
 	regex := "^" + regexp.QuoteMeta(keyprefix) + "[^/]*"
-	rv := make([]string, 1024)
+	rv := []string{}
 	q := p.db_bw.C("records").Find(bson.M{"key": bson.M{"$regex": bson.RegEx{Pattern: regex}}})
 	it := q.Iter()
 	val := struct{ Key string }{}
@@ -73,17 +76,35 @@ func (p *ProviderMongo) GetKeysUpToSlash(keyprefix string) []string {
 
 //Get sum(size) for all records with the given allocation set
 func (p *ProviderMongo) SumSize(AllocSet int64) int64 {
-	return 0
+	pipe := []bson.M {
+		bson.M {"$match":bson.M{"allocset":AllocSet}},
+		bson.M {"$group":bson.M{"_id":"", "sum":bson.M{"$sum":"$size"}}},
+	}
+	pr := p.db_bw.C("records").Pipe(pipe)
+	val := struct {Sum int64}{}
+	err := pr.One(&val)
+	if err != nil {
+		Report.Fatal("Could not sum size: %v", err)
+	}
+	return val.Sum
 }
 
 //Create an allocation set
 func (p *ProviderMongo) CreateAllocSet(r AllocationSet) {
-
+	if err := p.db_bw.C("allocset").Insert(r); err != nil {
+		Report.Fatal("Could not insert allocation set: %v", err)
+	}
 }
 
 //Get the allocation set ID
 func (p *ProviderMongo) GetAllocSetID(vk VK) int64 {
-	return 0
+	q := p.db_bw.C("allocset").Find(bson.M{"vk": bson.Binary{Kind:0, Data:[]byte(vk)}})
+	rv := struct {Id int64}{}
+	qerr := q.One(&rv)
+	if qerr != nil {
+		Report.Fatal("could not query allocset record: %v", qerr)
+	}
+	return rv.Id
 }
 
 //== MetadataQuery
