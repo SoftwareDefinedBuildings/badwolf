@@ -9,6 +9,10 @@ import (
 type ProviderMongo struct {
 	ses   *mgo.Session
 	db_bw *mgo.Database
+
+	// NOTE: this particular Mongo provider implements a document
+	// as naive {key: value} and only indexes on the unique identifier
+	// "uuid". Another implementation would use {"key": realkey, "value": realvalue}
 	db_mq *mgo.Database
 }
 
