@@ -106,7 +106,7 @@ func KVList2Bson(list KVList) bson.M {
 // get a single document by using a unique identifier
 func (p *ProviderMongo) GetDocumentUnique(uuid string) (KVList, error) {
 	var res bson.M
-	err := p.db_mq.C("records").FindId(uuid).One(&res)
+	err := p.db_mq.C("records").Find(bson.M{"uuid": uuid}).One(&res)
 	return Bson2KVList(res), err
 }
 
@@ -164,42 +164,83 @@ func (p *ProviderMongo) GetKeyGlob(key_glob string) ([]string, error) {
 
 // insert list of documents
 func (p *ProviderMongo) InsertDocument(docs []KVList) error {
-	return nil
+	bson_docs := []bson.M{}
+	for _, doc := range docs {
+		bson_docs = append(bson_docs, KVList2Bson(doc))
+	}
+	return p.db_mq.C("records").Insert(bson_docs)
 }
 
 // set k/v pairs in unique document
 func (p *ProviderMongo) SetKVDocumentUnique(kv KVList, uuid string) error {
-	return nil
+	return p.db_mq.C("records").Update(bson.M{"uuid": uuid}, KVList2Bson(kv))
 }
 
 // set k/v pairs in set of documents using where clause
 func (p *ProviderMongo) SetKVDocumentWhere(kv, where KVList) error {
-	return nil
+	// discarding mgo.CollectionInfo
+	_, err := p.db_mq.C("records").UpdateAll(KVList2Bson(where), KVList2Bson(kv))
+	return err
 }
 
 // set k/v pairs for set of documents with k/v matching glob
 func (p *ProviderMongo) SetKVDocumentValueGlob(kv KVList, key, value_glob string) error {
-	return nil
+	// discarding mgo.CollectionInfo
+	_, err := p.db_mq.C("records").UpdateAll(bson.M{key: bson.M{"$regex": value_glob}}, KVList2Bson(kv))
+	return err
 }
 
 // Delete Operations
 
 // delete list of keys in unique document
 func (p *ProviderMongo) DeleteKeyDocumentUnique(keys []string, uuid string) error {
-	return nil
+	removekeys := bson.M{}
+	for _, key := range keys {
+		removekeys[key] = ""
+	}
+	update := bson.M{"$unset": removekeys}
+	return p.db_mq.C("records").Update(bson.M{"uuid": uuid}, update)
 }
 
 // delete list of keys in set of documents using where clause
 func (p *ProviderMongo) DeleteKeyDocumentWhere(keys []string, where KVList) error {
-	return nil
+	removekeys := bson.M{}
+	for _, key := range keys {
+		removekeys[key] = ""
+	}
+	update := bson.M{"$unset": removekeys}
+	_, err := p.db_mq.C("records").UpdateAll(KVList2Bson(where), update)
+	return err
 }
 
 // delete keys that match glob in unique document
 func (p *ProviderMongo) DeleteKeyGlobDocumentUnique(key_glob, uuid string) error {
-	return nil
+	var doc bson.M
+	re := regexp.MustCompile(key_glob)
+	removekeys := bson.M{}
+	err := p.db_mq.C("records").Find(bson.M{"uuid": uuid}).One(&doc)
+	if err != nil {
+		return err
+	}
+	for k, _ := range doc {
+		if re.MatchString(k) {
+			removekeys[k] = ""
+		}
+	}
+	update := bson.M{"$unset": removekeys}
+	return p.db_mq.C("records").Update(bson.M{"uuid": uuid}, update)
 }
 
 // delete keys that match glob in set of documents using where clause
 func (p *ProviderMongo) DeleteKeyGlobDocumentWhere(key_glob string, where KVList) error {
+	q := p.db_mq.C("records").Find(KVList2Bson(where))
+	it := q.Iter()
+	doc := bson.M{}
+	for it.Next(&doc) {
+		err := p.DeleteKeyGlobDocumentUnique(key_glob, doc["uuid"].(string))
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
