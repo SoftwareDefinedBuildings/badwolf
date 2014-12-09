@@ -68,6 +68,14 @@ def get_ips(spot_instances):
     instances = conn.get_only_instances(instance_ids=instance_ids)
     return map(lambda x: (x.private_ip_address, x.ip_address), instances)
 
+def stop_instances(spot_instances):
+    # just pass this the output of create_some_spots and it will terminate just those instances
+    # returns a list of terminated instances
+    instance_ids = map(lambda x: x.instance_id, spot_instances)
+    return conn.terminate_instances(instance_ids=instance_ids)
+
+
+
 if __name__ == '__main__':
     import sys
     num = int(sys.argv[1])
