@@ -26,7 +26,7 @@ func benchmarks_entry() {
 
 //If all benchmark constants are relative to this, accuracy can be
 //scaled arbitrarily and reproducably by editing this constant
-const FACTOR = 1024
+const FACTOR = 512
 
 func BWUtil_GenVk() []byte {
 	rv := make([]byte,32)

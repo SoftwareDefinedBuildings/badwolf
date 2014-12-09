@@ -26,7 +26,7 @@ var Report Reporter
 func init() {
 	Report = Reporter{}
 	Report.VAL_Ok = true
-	Report.VAL_Metrics = make([]BPoint, 1024)
+	Report.VAL_Metrics = make([]BPoint, 0, 1024)
 }
 
 func (r *Reporter) Fatal(format string, args ...interface{}) {
