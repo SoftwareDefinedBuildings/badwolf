@@ -31,19 +31,24 @@ def create_some_spots(num, maxbid=None):
     if maxbid is None:
         history = conn.get_spot_price_history(instance_type = instance_type, availability_zone=availability_zone, product_description = "Linux/UNIX (Amazon VPC)")
         maxbid = history[0].price + .1
+    interface = boto.ec2.networkinterface.NetworkInterfaceSpecification(subnet_id=subnet_id,
+                                                                    groups=security_group_ids,
+                                                                    associate_public_ip_address=True)
+    interfaces = boto.ec2.networkinterface.NetworkInterfaceCollection(interface)
     instances = conn.request_spot_instances(str(maxbid), image_id,
                                             count = num,
                                             availability_zone_group = availability_zone,
                                             key_name = key_name,
                                             instance_type = instance_type,
-                                            subnet_id = subnet_id,
-                                            security_group_ids = security_group_ids,
+#                                            subnet_id = subnet_id,
+#                                            security_group_ids = security_group_ids,
+                                            network_interfaces=interfaces,
                                             dry_run = False)
 
     state = 'open'
     check_index = 0
     while state == 'open':
-        time.sleep(5)
+        time.sleep(10)
         spot = conn.get_all_spot_instance_requests(instances[check_index].id)[0]
         state = spot.state
         if state == 'active':
@@ -56,12 +61,12 @@ def create_some_spots(num, maxbid=None):
 
 def get_ips(spot_instances):
     instance_ids = map(lambda x: x.instance_id, spot_instances)
-    while any(map(lambda x: x is None, instance_ids)):
-        time.sleep(1)
-        instance_ids = map(lambda x: x.instance_id, spot_instances)
-        print "waiting for instance ids"
+    #while any(map(lambda x: x is None, instance_ids)):
+    #    time.sleep(1)
+    #    instance_ids = map(lambda x: x.instance_id, spot_instances)
+    #    print "waiting for instance ids"
     instances = conn.get_only_instances(instance_ids=instance_ids)
-    return map(lambda x: x.private_ip_address, instances)
+    return map(lambda x: (x.private_ip_address, x.ip_address), instances)
 
 if __name__ == '__main__':
     import sys
