@@ -11,7 +11,7 @@ d = pd.DataFrame.from_records(data['metrics'])
 
 for id_name, groupdata in d.groupby('id'):
     print id_name
-    print groupdata['value'].describe()
-    ax = groupdata.plot(kind='line',x='iteration', y='value', legend=False)
-    ax.set_ylabel('Latency (us)')
-    ax.set_title(id_name)
+    print (groupdata['value'] / groupdata['iteration'].max()).describe()
+    #ax = groupdata.plot(kind='line',x='iteration', y='value', legend=False)
+    #ax.set_ylabel('Latency (us)')
+    #ax.set_title(id_name)
