@@ -18,6 +18,9 @@ func benchmarks_entry() {
 	//TODO some reflection BS here, instead of hard coding
 	//foreach database type
 	for run := 0; run < FACTOR/10; run++ {
+		if run % 10 == 0 {
+			fmt.Printf("Doing Run %d\n", run)
+		}
 		provider := new(ProviderMongo)
 		provider.Initialize()
 		//Benchmarks
@@ -58,7 +61,6 @@ func BENCH_BWQ_A(p BosswaveQuery, pfx string, run int) {
 }
 
 func BENCH_MetadataQuery(mq MetadataQuery, prefix string, run int) {
-	fmt.Printf("Doing MetadataQuery Run %d\n", run)
 	// generate documents
 	sg := NewStringGenerator("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_")
 	toplevelkeys := sg.GenerateNRandomStrings(10, 10) // 10 random strings with length 10
@@ -95,9 +97,24 @@ func BENCH_MetadataQuery(mq MetadataQuery, prefix string, run int) {
 
 	// GetDocumentSetWhere -- many doc
 	st = Report.StartTimer()
-	for _, tlv := range toplevelvalues {
-		mq.GetDocumentSetWhere(KVList{[2]string{toplevelkeys[rand.Intn(10)], tlv}}) // fetch 1 doc
+	for _, rec := range recs {
+		mq.GetDocumentSetWhere(KVList{[2]string{toplevelkeys[rand.Intn(10)], rec[rand.Intn(10)][1]}}) // fetch 1 doc
 	}
 	Report.DeltaMetric(prefix+".GetDocumentSetWhereManyDoc", run, st)
+
+	// GetUniqueValues
+	st = Report.StartTimer()
+	for _, rec := range recs {
+		mq.GetUniqueValues(rec[rand.Intn(10)][0])
+	}
+	Report.DeltaMetric(prefix+".GetUniqueValues", run, st)
+
+	// GetDocumentSetValueGlob
+	st = Report.StartTimer()
+	for _, rec := range recs {
+		i := rand.Intn(10)
+		mq.GetDocumentSetValueGlob(rec[i][0], string(rec[i][1][0])+".*")
+	}
+	Report.DeltaMetric(prefix+".GetDocumentSetValueGlob", run, st)
 
 }
