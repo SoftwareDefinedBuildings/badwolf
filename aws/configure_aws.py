@@ -7,13 +7,15 @@ config = ConfigObj('aws.ini')['aws']
 print config
 AWS_SECRET_ACCESS_KEY=config['AWS_SECRET_ACCESS_KEY']
 AWS_ACCESS_KEY=config['AWS_ACCESS_KEY']
-smap_ami = config['image_id']
+image_id = config['image_id']
 key_name = config['key_name']
 instance_type = config['instance_type']
 security_group_ids = config['security_group_ids']
 if not isinstance(security_group_ids, list):
     security_group_ids = [security_group_ids]
 subnet_id = config['subnet_id']
+vpc_id = config['vpc_id']
+availability_zone = config['availability_zone']
 region = config['region']
 
 # we use this connection to create instances
@@ -21,34 +23,56 @@ conn = boto.ec2.connect_to_region(region,
     aws_access_key_id=AWS_ACCESS_KEY,
     aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
 
-def get_instance(conn, ami, key, instance, security_groups, subnet):
+def create_some_spots(num, maxbid=None):
     """
-    Create an instance on EC2 with the given parameters
+    Create [num] spot instances. If maxbid ($) is specified, uses the maximum bid, else adds 10 cents to the most recent
+    price
     """
-    reservation = conn.run_instances(ami, key_name=key, instance_type=instance, security_group_ids=security_groups, subnet_id=subnet_id)
-    instance = reservation.instances[0]
-    instance.update()
-    while instance.state == 'pending':
-        print instance,instance.state,instance.ip_address
-        time.sleep(5)
-        instance.update()
-    print 'GOT ip', instance, instance.state, instance.ip_address
-    return instance
+    if maxbid is None:
+        history = conn.get_spot_price_history(instance_type = instance_type, availability_zone=availability_zone, product_description = "Linux/UNIX (Amazon VPC)")
+        maxbid = history[0].price + .1
+    instances = conn.request_spot_instances(str(maxbid), image_id,
+                                            count = num,
+                                            availability_zone_group = availability_zone,
+                                            key_name = key_name,
+                                            instance_type = instance_type,
+                                            subnet_id = subnet_id,
+                                            security_group_ids = security_group_ids,
+                                            dry_run = False)
 
-def create_some(num):
-    """
-    Create [num] instances and return the list of created IP addresses
-    """
-    ips = []
-    for i in range(num):
-        instance = get_instance(conn, smap_ami, key_name, instance_type, security_group_ids, subnet_id)
-        ips.append(instance.ip_address)
-    return ips
+    state = 'open'
+    check_index = 0
+    while state == 'open':
+        time.sleep(5)
+        spot = conn.get_all_spot_instance_requests(instances[check_index].id)[0]
+        state = spot.state
+        if state == 'active':
+            check_index = min(check_index+1, num)
+            if check_index == num: break
+            state = 'open'
+        print 'Still checking spot request id', instances[check_index].id
+    spot_instance_ids = map(lambda x: x.id, instances)
+    return conn.get_all_spot_instance_requests(spot_instance_ids)
+
+def get_ips(spot_instances):
+    instance_ids = map(lambda x: x.instance_id, spot_instances)
+    while any(map(lambda x: x is None, instance_ids)):
+        time.sleep(1)
+        instance_ids = map(lambda x: x.instance_id, spot_instances)
+        print "waiting for instance ids"
+    instances = conn.get_only_instances(instance_ids=instance_ids)
+    return map(lambda x: x.private_ip_address, instances)
 
 if __name__ == '__main__':
     import sys
     num = int(sys.argv[1])
-    ips = create_some(num)
-    with open('ips.csv','w+') as f:
-        for ip in ips:
-            f.write(ip+'\n')
+    try:
+        spot_instances = create_some_spots(num)
+        ips = get_ips(spot_instances)
+        with open('ips.csv','w+') as f:
+            for ip in ips:
+                f.write(ip+'\n')
+    except Exception as e:
+        print "got exception",e,"now dropping into console"
+        import IPython
+        IPython.embed(user_ns=locals())
