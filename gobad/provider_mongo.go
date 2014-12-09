@@ -3,8 +3,8 @@ package main
 import (
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
-	"regexp"
 	"os"
+	"regexp"
 )
 
 type ProviderMongo struct {
@@ -76,12 +76,12 @@ func (p *ProviderMongo) GetKeysUpToSlash(keyprefix string) []string {
 
 //Get sum(size) for all records with the given allocation set
 func (p *ProviderMongo) SumSize(AllocSet int64) int64 {
-	pipe := []bson.M {
-		bson.M {"$match":bson.M{"allocset":AllocSet}},
-		bson.M {"$group":bson.M{"_id":"", "sum":bson.M{"$sum":"$size"}}},
+	pipe := []bson.M{
+		bson.M{"$match": bson.M{"allocset": AllocSet}},
+		bson.M{"$group": bson.M{"_id": "", "sum": bson.M{"$sum": "$size"}}},
 	}
 	pr := p.db_bw.C("records").Pipe(pipe)
-	val := struct {Sum int64}{}
+	val := struct{ Sum int64 }{}
 	err := pr.One(&val)
 	if err != nil {
 		Report.Fatal("Could not sum size: %v", err)
@@ -98,8 +98,8 @@ func (p *ProviderMongo) CreateAllocSet(r AllocationSet) {
 
 //Get the allocation set ID
 func (p *ProviderMongo) GetAllocSetID(vk VK) int64 {
-	q := p.db_bw.C("allocset").Find(bson.M{"vk": bson.Binary{Kind:0, Data:[]byte(vk)}})
-	rv := struct {Id int64}{}
+	q := p.db_bw.C("allocset").Find(bson.M{"vk": bson.Binary{Kind: 0, Data: []byte(vk)}})
+	rv := struct{ Id int64 }{}
 	qerr := q.One(&rv)
 	if qerr != nil {
 		Report.Fatal("could not query allocset record: %v", qerr)
