@@ -40,8 +40,6 @@ def create_some_spots(num, maxbid=None):
                                             availability_zone_group = availability_zone,
                                             key_name = key_name,
                                             instance_type = instance_type,
-#                                            subnet_id = subnet_id,
-#                                            security_group_ids = security_group_ids,
                                             network_interfaces=interfaces,
                                             dry_run = False)
 
@@ -61,10 +59,6 @@ def create_some_spots(num, maxbid=None):
 
 def get_ips(spot_instances):
     instance_ids = map(lambda x: x.instance_id, spot_instances)
-    #while any(map(lambda x: x is None, instance_ids)):
-    #    time.sleep(1)
-    #    instance_ids = map(lambda x: x.instance_id, spot_instances)
-    #    print "waiting for instance ids"
     instances = conn.get_only_instances(instance_ids=instance_ids)
     return map(lambda x: (x.private_ip_address, x.ip_address), instances)
 
