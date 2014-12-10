@@ -3,6 +3,7 @@ package main
 import (
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
+	"os"
 )
 
 // The "Exploded" Mongo structures each document as having a linking docid field,
@@ -17,8 +18,8 @@ type ProviderMongoExploded struct {
 	db_mq *mgo.Database
 }
 
-func (p *ProviderMongoExploded) Initialize(params map[string]interface{}) {
-	ses, err := mgo.Dial(params["mongodb"].(string))
+func (p *ProviderMongoExploded) Initialize() {
+	ses, err := mgo.Dial(os.Getenv("MONGODB_SERVER"))
 	if err != nil {
 		Report.Fatal("could not connect to mongo: %v", err)
 	}
