@@ -10,6 +10,7 @@ import (
 
 type BPoint struct {
 	Id        string  `json:"id"`
+	Provider  string  `json:"provider"`
 	Iteration int     `json:"iteration"`
 	Value     float64 `json:"value"`
 }
@@ -41,12 +42,12 @@ func (r *Reporter) Fatal(format string, args ...interface{}) {
 	os.Exit(1)
 }
 
-func (r *Reporter) Metric(id string, iteration int, value float64) {
-	r.VAL_Metrics = append(r.VAL_Metrics, BPoint{Id: id, Iteration: iteration, Value: value})
+func (r *Reporter) Metric(id string, provider string, iteration int, value float64) {
+	r.VAL_Metrics = append(r.VAL_Metrics, BPoint{Id: id, Provider: provider, Iteration: iteration, Value: value})
 }
 
-func (r *Reporter) DeltaMetric(id string, iteration int, start time.Time) {
-	r.Metric(id, iteration, r.FinishTimer(start))
+func (r *Reporter) DeltaMetric(id string, provider string, iteration int, start time.Time) {
+	r.Metric(id, provider iteration, r.FinishTimer(start))
 }
 
 func (r *Reporter) WriteOut() {
