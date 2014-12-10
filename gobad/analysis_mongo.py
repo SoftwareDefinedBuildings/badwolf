@@ -16,11 +16,13 @@ def chunker(seq, size):
 
 #TODO: we are going to want to compare plots across providers, so we might need another key
 ids = d['id'].unique()
-for idx, chunk in enumerate(chunker(ids, 4)):
-    tmp = d[d['id'].isin(chunk)]
-    ax = sns.violinplot(tmp['value'], tmp['id'], figsize=(24,16))
+for id_name in d['id'].unique():
+    tmp = d[d['id'] == id_name]
+    plt.clf()
+    ax = sns.violinplot(tmp['value'], tmp['provider'], figsize=(24,16))
+    ax.set_title(id_name)
     fig = ax.get_figure()
-    fig.savefig('violin{0}.pdf'.format(idx))
+    fig.savefig('violin{0}.pdf'.format(id_name))
 
 
 for id_name, groupdata in d.groupby('id'):
