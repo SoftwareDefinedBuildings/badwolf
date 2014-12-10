@@ -129,13 +129,17 @@ func (p *ProviderMongoExploded) GetDocumentSetValueGlob(key, value_glob string) 
 
 // get a set of keys that match a glob
 func (p *ProviderMongoExploded) GetKeyGlob(key_glob string) []string {
-	var res []string
+	var res []bson.M
 	q := p.db_mq.C("records").Find(bson.M{"key": bson.M{"$regex": key_glob}}).Select(bson.M{"key": 1})
 	err := q.All(&res)
 	if err != nil {
 		Report.Fatal("Error retreiving keys that match blob: %v", err)
 	}
-	return res
+	ret := []string{}
+	for _, d := range res {
+		ret = append(ret, d["key"].(string))
+	}
+	return ret
 }
 
 // Set Operations
@@ -218,10 +222,13 @@ func (p *ProviderMongoExploded) DeleteKeyDocumentUnique(keys []string, uuid stri
 	var first bson.M
 	err := p.db_mq.C("records").Find(bson.M{"key": "uuid", "value": uuid}).One(&first)
 	if err != nil {
-		Report.Fatal("Error finding document with uuid: %v", err)
+		Report.Fatal("Error finding unique document for delete with uuid: %v", err)
 	}
 
 	for _, key := range keys {
+		if key == "uuid" {
+			continue
+		}
 		_, err = p.db_mq.C("records").RemoveAll(bson.M{"docid": first["docid"].(string), "key": key})
 		if err != nil {
 			Report.Fatal("Error deleting key from document: %v", err)
@@ -237,6 +244,9 @@ func (p *ProviderMongoExploded) DeleteKeyDocumentWhere(keys []string, where KVLi
 		Report.Fatal("Error selecting documents: %v", err)
 	}
 	for _, key := range keys {
+		if key == "uuid" {
+			continue
+		}
 		for _, docid := range docids {
 			_, err := p.db_mq.C("records").RemoveAll(bson.M{"key": key, "docid": docid})
 			if err != nil {
@@ -251,7 +261,7 @@ func (p *ProviderMongoExploded) DeleteKeyGlobDocumentUnique(key_glob, uuid strin
 	var first bson.M
 	err := p.db_mq.C("records").Find(bson.M{"key": "uuid", "value": uuid}).One(&first)
 	if err != nil {
-		Report.Fatal("Error finding document with uuid: %v", err)
+		Report.Fatal("Error finding document for glob delete with uuid: %v", err)
 	}
 	_, err = p.db_mq.C("records").RemoveAll(bson.M{"docid": first["docid"].(string), "key": bson.M{"$regex": key_glob}})
 	if err != nil {

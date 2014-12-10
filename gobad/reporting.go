@@ -42,12 +42,12 @@ func (r *Reporter) Fatal(format string, args ...interface{}) {
 	os.Exit(1)
 }
 
-func (r *Reporter) Metric(id string, provider string, iteration int, value float64) {
+func (r *Reporter) Metric(provider string, id string, iteration int, value float64) {
 	r.VAL_Metrics = append(r.VAL_Metrics, BPoint{Id: id, Provider: provider, Iteration: iteration, Value: value})
 }
 
-func (r *Reporter) DeltaMetric(id string, provider string, iteration int, start time.Time) {
-	r.Metric(id, provider, iteration, r.FinishTimer(start))
+func (r *Reporter) DeltaMetric(provider string, id string, iteration int, start time.Time) {
+	r.Metric(provider, id, iteration, r.FinishTimer(start))
 }
 
 func (r *Reporter) WriteOut() {

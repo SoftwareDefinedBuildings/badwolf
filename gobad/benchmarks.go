@@ -17,25 +17,16 @@ func benchmarks_entry() {
 
 	//TODO some reflection BS here, instead of hard coding
 	//foreach database type
-	//for run := 0; run < FACTOR/10; run++ {
-	//	if run%10 == 0 {
-	//		fmt.Printf("Doing Run %d\n", run)
-	//	}
-	//	provider := new(ProviderMongo)
-	//	provider.Initialize()
-	//	//Benchmarks
-	//	//BENCH_BWQ_A(provider, "mongo", run)
-	//	BENCH_MetadataQuery(provider, "mongo", run)
-	//}
-
 	for run := 0; run < FACTOR/10; run++ {
 		if run%10 == 0 {
 			fmt.Printf("Doing Run %d\n", run)
 		}
-		provider := new(ProviderMongoExploded)
+		provider := new(ProviderMongo)
 		provider.Initialize()
 		//Benchmarks
 		//BENCH_BWQ_A(provider, "mongo", run)
+		BENCH_MetadataQuery(provider, "mongo", run)
+		provider.Initialize()
 		BENCH_MetadataQuery(provider, "mongoexploded", run)
 	}
 
@@ -89,35 +80,35 @@ func BENCH_MetadataQuery(mq MetadataQuery, provider string, run int) {
 	for _, rec := range recs {
 		mq.InsertDocument([]KVList{rec})
 	}
-	Report.DeltaMetric(provider, ".InsertDocument", run, st)
+	Report.DeltaMetric(provider, "InsertDocument", run, st)
 
 	// GetDocumentUnique
 	st = Report.StartTimer()
 	for _, rec := range recs {
 		mq.GetDocumentUnique(rec[0][1]) // fetch uuid
 	}
-	Report.DeltaMetric(provider, ".GetDocumentUnique", run, st)
+	Report.DeltaMetric(provider, "GetDocumentUnique", run, st)
 
 	// GetDocumentSetWhere -- 1 doc
 	st = Report.StartTimer()
 	for _, rec := range recs {
 		mq.GetDocumentSetWhere(rec) // fetch 1 doc
 	}
-	Report.DeltaMetric(provider, ".GetDocumentSetWhere1Doc", run, st)
+	Report.DeltaMetric(provider, "GetDocumentSetWhere1Doc", run, st)
 
 	// GetDocumentSetWhere -- many doc
 	st = Report.StartTimer()
 	for _, rec := range recs {
 		mq.GetDocumentSetWhere(KVList{[2]string{toplevelkeys[rand.Intn(10)], rec[rand.Intn(10)][1]}}) // fetch 1 doc
 	}
-	Report.DeltaMetric(provider, ".GetDocumentSetWhereManyDoc", run, st)
+	Report.DeltaMetric(provider, "GetDocumentSetWhereManyDoc", run, st)
 
 	// GetUniqueValues
 	st = Report.StartTimer()
 	for _, rec := range recs {
 		mq.GetUniqueValues(rec[rand.Intn(10)][0])
 	}
-	Report.DeltaMetric(provider, ".GetUniqueValues", run, st)
+	Report.DeltaMetric(provider, "GetUniqueValues", run, st)
 
 	// GetDocumentSetValueGlob
 	st = Report.StartTimer()
@@ -125,7 +116,7 @@ func BENCH_MetadataQuery(mq MetadataQuery, provider string, run int) {
 		i := rand.Intn(10)
 		mq.GetDocumentSetValueGlob(rec[i][0], string(rec[i][1][0])+".*")
 	}
-	Report.DeltaMetric(provider, ".GetDocumentSetValueGlob", run, st)
+	Report.DeltaMetric(provider, "GetDocumentSetValueGlob", run, st)
 
 	// GetKeyGlob
 	st = Report.StartTimer()
@@ -133,7 +124,7 @@ func BENCH_MetadataQuery(mq MetadataQuery, provider string, run int) {
 		i := rand.Intn(10)
 		mq.GetKeyGlob(string(rec[i][0][0]) + ".*")
 	}
-	Report.DeltaMetric(provider, ".GetKeyGlob", run, st)
+	Report.DeltaMetric(provider, "GetKeyGlob", run, st)
 
 	// SetKVDocumentUnique
 	st = Report.StartTimer()
@@ -141,7 +132,7 @@ func BENCH_MetadataQuery(mq MetadataQuery, provider string, run int) {
 		randomkv := KVList{[2]string{sg.RandomString(10), sg.RandomString(10)}}
 		mq.SetKVDocumentUnique(randomkv, rec[0][1])
 	}
-	Report.DeltaMetric(provider, ".SetKVDocumentUnique", run, st)
+	Report.DeltaMetric(provider, "SetKVDocumentUnique", run, st)
 
 	// SetKVDocumentWhere
 	st = Report.StartTimer()
@@ -149,7 +140,7 @@ func BENCH_MetadataQuery(mq MetadataQuery, provider string, run int) {
 		randomkv := KVList{[2]string{sg.RandomString(10), sg.RandomString(10)}}
 		mq.SetKVDocumentWhere(randomkv, KVList{[2]string{toplevelkeys[rand.Intn(10)], rec[rand.Intn(10)][1]}})
 	}
-	Report.DeltaMetric(provider, ".SetKVDocumentWhere", run, st)
+	Report.DeltaMetric(provider, "SetKVDocumentWhere", run, st)
 
 	// SetKVDocumentValueGlob
 	st = Report.StartTimer()
@@ -158,14 +149,14 @@ func BENCH_MetadataQuery(mq MetadataQuery, provider string, run int) {
 		randomkv := KVList{[2]string{sg.RandomString(10), sg.RandomString(10)}}
 		mq.SetKVDocumentValueGlob(randomkv, rec[i][0], string(rec[i][1][0])+".*")
 	}
-	Report.DeltaMetric(provider, ".SetKVDocumentValueGlob", run, st)
+	Report.DeltaMetric(provider, "SetKVDocumentValueGlob", run, st)
 
 	// DeleteKeyDocumentUnique
 	st = Report.StartTimer()
 	for _, rec := range recs {
 		mq.DeleteKeyDocumentUnique(toplevelkeys[:2], rec[0][1])
 	}
-	Report.DeltaMetric(provider, ".DeleteKeyDocumentUnique", run, st)
+	Report.DeltaMetric(provider, "DeleteKeyDocumentUnique", run, st)
 
 	// adjust toplevel keys
 	toplevelkeys = toplevelkeys[2:]
@@ -176,7 +167,7 @@ func BENCH_MetadataQuery(mq MetadataQuery, provider string, run int) {
 		where := KVList{[2]string{toplevelkeys[rand.Intn(8)], rec[rand.Intn(8)][1]}}
 		mq.DeleteKeyDocumentWhere(toplevelkeys[:2], where)
 	}
-	Report.DeltaMetric(provider, ".DeleteKeyDocumentWhere", run, st)
+	Report.DeltaMetric(provider, "DeleteKeyDocumentWhere", run, st)
 
 	// adjust toplevel keys
 	toplevelkeys = toplevelkeys[2:]
@@ -186,7 +177,7 @@ func BENCH_MetadataQuery(mq MetadataQuery, provider string, run int) {
 	for _, rec := range recs {
 		mq.DeleteKeyGlobDocumentUnique(string(toplevelkeys[0][0])+".*", rec[0][1])
 	}
-	Report.DeltaMetric(provider, ".DeleteKeyGlobDocumentUnique", run, st)
+	Report.DeltaMetric(provider, "DeleteKeyGlobDocumentUnique", run, st)
 
 	// adjust again
 	toplevelkeys = toplevelkeys[1:]
@@ -197,5 +188,5 @@ func BENCH_MetadataQuery(mq MetadataQuery, provider string, run int) {
 		where := KVList{[2]string{toplevelkeys[rand.Intn(5)], rec[rand.Intn(5)][1]}}
 		mq.DeleteKeyGlobDocumentWhere(string(toplevelkeys[0][0])+".*", where)
 	}
-	Report.DeltaMetric(provider, ".DeleteKeyGlobDocumentWhere", run, st)
+	Report.DeltaMetric(provider, "DeleteKeyGlobDocumentWhere", run, st)
 }
