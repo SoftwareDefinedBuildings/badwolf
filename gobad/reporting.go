@@ -17,6 +17,8 @@ type Reporter struct {
 	VAL_Ok       bool     `json:"ok"`
 	VAL_FatalMsg string   `json:"fatalmsg"`
 	VAL_Metrics  []BPoint `json:"metrics"`
+	VAL_Start	 int64	  `json:"starttime"`
+	VAL_End		 int64	  `json:"endtime"`
 }
 
 type Measurement time.Time
@@ -27,6 +29,8 @@ func init() {
 	Report = Reporter{}
 	Report.VAL_Ok = true
 	Report.VAL_Metrics = make([]BPoint, 0, 1024)
+	Report.VAL_Start = time.Now().Unix()
+	
 }
 
 func (r *Reporter) Fatal(format string, args ...interface{}) {
@@ -46,6 +50,7 @@ func (r *Reporter) DeltaMetric(id string, iteration int, start time.Time) {
 }
 
 func (r *Reporter) WriteOut() {
+	Report.VAL_End = time.Now().Unix()
 	f, err := os.Create("benchmarkresult.json")
 	if err != nil {
 		log.Panicf("Could not create result file")

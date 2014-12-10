@@ -3,8 +3,8 @@ package main
 import (
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
-	"regexp"
 	"os"
+	"regexp"
 )
 
 type ProviderMongo struct {
@@ -76,12 +76,12 @@ func (p *ProviderMongo) GetKeysUpToSlash(keyprefix string) []string {
 
 //Get sum(size) for all records with the given allocation set
 func (p *ProviderMongo) SumSize(AllocSet int64) int64 {
-	pipe := []bson.M {
-		bson.M {"$match":bson.M{"allocset":AllocSet}},
-		bson.M {"$group":bson.M{"_id":"", "sum":bson.M{"$sum":"$size"}}},
+	pipe := []bson.M{
+		bson.M{"$match": bson.M{"allocset": AllocSet}},
+		bson.M{"$group": bson.M{"_id": "", "sum": bson.M{"$sum": "$size"}}},
 	}
 	pr := p.db_bw.C("records").Pipe(pipe)
-	val := struct {Sum int64}{}
+	val := struct{ Sum int64 }{}
 	err := pr.One(&val)
 	if err != nil {
 		Report.Fatal("Could not sum size: %v", err)
@@ -98,8 +98,8 @@ func (p *ProviderMongo) CreateAllocSet(r AllocationSet) {
 
 //Get the allocation set ID
 func (p *ProviderMongo) GetAllocSetID(vk VK) int64 {
-	q := p.db_bw.C("allocset").Find(bson.M{"vk": bson.Binary{Kind:0, Data:[]byte(vk)}})
-	rv := struct {Id int64}{}
+	q := p.db_bw.C("allocset").Find(bson.M{"vk": bson.Binary{Kind: 0, Data: []byte(vk)}})
+	rv := struct{ Id int64 }{}
 	qerr := q.One(&rv)
 	if qerr != nil {
 		Report.Fatal("could not query allocset record: %v", qerr)
@@ -114,7 +114,11 @@ func (p *ProviderMongo) GetAllocSetID(vk VK) int64 {
 func Bson2KVList(doc bson.M) KVList {
 	ret := KVList{}
 	for k, v := range doc {
-		ret = append(ret, [2]string{k, v.(string)})
+		if val, ok := v.(string); ok {
+			ret = append(ret, [2]string{k, val})
+		} else {
+			ret = append(ret, [2]string{k, string(v.(bson.ObjectId))})
+		}
 	}
 	return ret
 }
@@ -195,19 +199,17 @@ func (p *ProviderMongo) GetKeyGlob(key_glob string) []string {
 
 // insert list of documents
 func (p *ProviderMongo) InsertDocument(docs []KVList) {
-	bson_docs := []bson.M{}
 	for _, doc := range docs {
-		bson_docs = append(bson_docs, KVList2Bson(doc))
-	}
-	err := p.db_mq.C("records").Insert(bson_docs)
-	if err != nil {
-		Report.Fatal("Error inserting documents: %v")
+		err := p.db_mq.C("records").Insert(KVList2Bson(doc))
+		if err != nil {
+			Report.Fatal("Error inserting documents: %v : %v", err, doc)
+		}
 	}
 }
 
 // set k/v pairs in unique document
 func (p *ProviderMongo) SetKVDocumentUnique(kv KVList, uuid string) {
-	err := p.db_mq.C("records").Update(bson.M{"uuid": uuid}, KVList2Bson(kv))
+	err := p.db_mq.C("records").Update(bson.M{"uuid": uuid}, bson.M{"$set": KVList2Bson(kv)})
 	if err != nil {
 		Report.Fatal("Error setting k/v pairs: %v", err)
 	}
@@ -216,7 +218,7 @@ func (p *ProviderMongo) SetKVDocumentUnique(kv KVList, uuid string) {
 // set k/v pairs in set of documents using where clause
 func (p *ProviderMongo) SetKVDocumentWhere(kv, where KVList) {
 	// discarding mgo.CollectionInfo
-	_, err := p.db_mq.C("records").UpdateAll(KVList2Bson(where), KVList2Bson(kv))
+	_, err := p.db_mq.C("records").UpdateAll(KVList2Bson(where), bson.M{"$set": KVList2Bson(kv)})
 	if err != nil {
 		Report.Fatal("Error setting k/v pairs: %v", err)
 	}
@@ -225,7 +227,7 @@ func (p *ProviderMongo) SetKVDocumentWhere(kv, where KVList) {
 // set k/v pairs for set of documents with k/v matching glob
 func (p *ProviderMongo) SetKVDocumentValueGlob(kv KVList, key, value_glob string) {
 	// discarding mgo.CollectionInfo
-	_, err := p.db_mq.C("records").UpdateAll(bson.M{key: bson.M{"$regex": value_glob}}, KVList2Bson(kv))
+	_, err := p.db_mq.C("records").UpdateAll(bson.M{key: bson.M{"$regex": value_glob}}, bson.M{"$set": KVList2Bson(kv)})
 	if err != nil {
 		Report.Fatal("Error setting k/v pairs: %v", err)
 	}
@@ -268,6 +270,8 @@ func (p *ProviderMongo) DeleteKeyGlobDocumentUnique(key_glob, uuid string) {
 	if err != nil {
 		Report.Fatal("Error finding doc with uuid %v", err)
 	}
+	delete(doc, "_id")
+	delete(doc, "uuid")
 	for k, _ := range doc {
 		if re.MatchString(k) {
 			removekeys[k] = ""
@@ -281,12 +285,11 @@ func (p *ProviderMongo) DeleteKeyGlobDocumentUnique(key_glob, uuid string) {
 }
 
 // delete keys that match glob in set of documents using where clause
-func (p *ProviderMongo) DeleteKeyGlobDocumentWhere(key_glob string, where KVList) error {
+func (p *ProviderMongo) DeleteKeyGlobDocumentWhere(key_glob string, where KVList) {
 	q := p.db_mq.C("records").Find(KVList2Bson(where))
 	it := q.Iter()
 	doc := bson.M{}
 	for it.Next(&doc) {
 		p.DeleteKeyGlobDocumentUnique(key_glob, doc["uuid"].(string))
 	}
-	return nil
 }
