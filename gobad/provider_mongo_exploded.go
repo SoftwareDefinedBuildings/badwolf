@@ -25,10 +25,11 @@ func (p *ProviderMongoExploded) Initialize() {
 	}
 	p.ses = ses
 	p.db_mq = ses.DB("metadataquery")
+	p.db_mq.DropDatabase()
 
 	//MetadataQuery initialization
-	p.db_mq.C("records").EnsureIndex(mgo.Index{Key: []string{"key"}, Unique: true})
-	p.db_mq.C("records").EnsureIndex(mgo.Index{Key: []string{"docid"}, Unique: true})
+	p.db_mq.C("records").EnsureIndex(mgo.Index{Key: []string{"key"}, Unique: false})
+	p.db_mq.C("records").EnsureIndex(mgo.Index{Key: []string{"docid"}, Unique: false})
 }
 
 //== MetadataQuery
@@ -141,13 +142,13 @@ func (p *ProviderMongoExploded) GetKeyGlob(key_glob string) []string {
 
 // insert list of documents
 func (p *ProviderMongoExploded) InsertDocument(docs []KVList) {
-	bson_docs := []bson.M{}
 	for i, doc := range docs {
-		bson_docs = append(bson_docs, KVList2ExplodedBsonOne(doc, string(i))...)
-	}
-	err := p.db_mq.C("records").Insert(bson_docs)
-	if err != nil {
-		Report.Fatal("Error inserting documents: %v", err)
+		for _, rec := range KVList2ExplodedBsonOne(doc, string(i)) {
+			err := p.db_mq.C("records").Insert(rec)
+			if err != nil {
+				Report.Fatal("Error inserting documents: %v", err)
+			}
+		}
 	}
 }
 
