@@ -18,8 +18,8 @@ type Reporter struct {
 	VAL_Ok       bool     `json:"ok"`
 	VAL_FatalMsg string   `json:"fatalmsg"`
 	VAL_Metrics  []BPoint `json:"metrics"`
-	VAL_Start	 int64	  `json:"starttime"`
-	VAL_End		 int64	  `json:"endtime"`
+	VAL_Start    int64    `json:"starttime"`
+	VAL_End      int64    `json:"endtime"`
 }
 
 type Measurement time.Time
@@ -31,7 +31,7 @@ func init() {
 	Report.VAL_Ok = true
 	Report.VAL_Metrics = make([]BPoint, 0, 1024)
 	Report.VAL_Start = time.Now().Unix()
-	
+
 }
 
 func (r *Reporter) Fatal(format string, args ...interface{}) {
@@ -47,7 +47,7 @@ func (r *Reporter) Metric(id string, provider string, iteration int, value float
 }
 
 func (r *Reporter) DeltaMetric(id string, provider string, iteration int, start time.Time) {
-	r.Metric(id, provider iteration, r.FinishTimer(start))
+	r.Metric(id, provider, iteration, r.FinishTimer(start))
 }
 
 func (r *Reporter) WriteOut() {
